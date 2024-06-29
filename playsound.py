@@ -142,9 +142,9 @@ def _playsoundNix(sound, block = True):
         # python 2
         from urllib import pathname2url
 
-    import gi
-    gi.require_version('Gst', '1.0')
-    from gi.repository import Gst
+    import pgi
+    pgi.require_version('Gst', '1.0')
+    from pgi.repository import Gst
 
     Gst.init(None)
 
@@ -229,9 +229,9 @@ else:
     playsound = _playsoundNix
     if __name__ != '__main__':  # Ensure we don't infinitely recurse trying to get another python instance.
         try:
-            import gi
-            gi.require_version('Gst', '1.0')
-            from gi.repository import Gst
+            import pgi
+            pgi.require_version('Gst', '1.0')
+            from pgi.repository import Gst
         except:
             logger.warning("playsound is relying on another python subprocess. Please use `pip install pygobject` if you want playsound to run more efficiently.")
             playsound = lambda sound, block = True: _playsoundAnotherPython('/usr/bin/python3', sound, block, macOS = False)
