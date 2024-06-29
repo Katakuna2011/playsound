@@ -28,7 +28,8 @@ def _playsoundWin(sound, block = True):
 
     I never would have tried using windll.winmm without seeing his code.
     '''
-    sound = '"' + _canonicalizePath(sound) + '"'
+    # sound = '"' + _canonicalizePath(sound) + '"'
+    sound = f'\"{_canonicalizePath(sound)}\"'
 
     from ctypes import create_unicode_buffer, windll, wintypes
     from time   import sleep
@@ -43,23 +44,23 @@ def _playsoundWin(sound, block = True):
         if errorCode:
             errorBuffer = create_unicode_buffer(bufLen)
             windll.winmm.mciGetErrorStringW(errorCode, errorBuffer, bufLen - 1)  # use widestring version of the function
-            exceptionMessage = ('\n    Error ' + str(errorCode) + ' for command:'
-                                '\n        ' + command +
-                                '\n    ' + errorBuffer.value)
+            exceptionMessage = (f'\n    Error {str(errorCode)} for command:'
+                                f'\n        {command}' +
+                                f'\n    {errorBuffer.value}')
             logger.error(exceptionMessage)
             raise PlaysoundException(exceptionMessage)
         return buf.value
 
     try:
         logger.debug('Starting')
-        winCommand(u'open {}'.format(sound))
-        winCommand(u'play {}{}'.format(sound, ' wait' if block else ''))
+        winCommand(f'open {sound}')
+        winCommand(f'play {sound}{' block' if block else ''}')
         logger.debug('Returning')
     finally:
         try:
-            winCommand(u'close {}'.format(sound))
+            winCommand(f'close {sound}')
         except PlaysoundException:
-            logger.warning(u'Failed to close the file: {}'.format(sound))
+            logger.warning(f'Failed to close the file: {sound}')
             # If it fails, there's nothing more that can be done...
             pass
 
@@ -69,8 +70,8 @@ def _handlePathOSX(sound):
     if '://' not in sound:
         if not sound.startswith('/'):
             from os import getcwd
-            sound = getcwd() + '/' + sound
-        sound = 'file://' + sound
+            sound = f'{getcwd()}/{sound}'
+        sound = f'file://{sound}'
 
     try:
         # Don't double-encode it.
@@ -111,16 +112,16 @@ def _playsoundOSX(sound, block = True):
     sound = _handlePathOSX(sound)
     url   = NSURL.URLWithString_(sound)
     if not url:
-        raise PlaysoundException('Cannot find a sound with filename: ' + sound)
+        raise PlaysoundException(f'Cannot find a sound with filename: {sound}')
 
     for i in range(5):
         nssound = NSSound.alloc().initWithContentsOfURL_byReference_(url, True)
         if nssound:
             break
         else:
-            logger.debug('Failed to load sound, although url was good... ' + sound)
+            logger.debug(f'Failed to load sound, although url was good... {sound}')
     else:
-        raise PlaysoundException('Could not load sound with filename, although URL was good... ' + sound)
+        raise PlaysoundException(f'Could not load sound with filename, although URL was good... {sound}')
     nssound.play()
 
     if block:
@@ -154,14 +155,14 @@ def _playsoundNix(sound, block = True):
     else:
         path = abspath(sound)
         if not exists(path):
-            raise PlaysoundException(u'File not found: {}'.format(path))
-        playbin.props.uri = 'file://' + pathname2url(path)
+            raise PlaysoundException(f'File not found: {path}')
+        playbin.props.uri = f'file://{pathname2url(path)}'
 
 
     set_result = playbin.set_state(Gst.State.PLAYING)
     if set_result != Gst.StateChangeReturn.ASYNC:
         raise PlaysoundException(
-            "playbin.set_state returned " + repr(set_result))
+            f"playbin.set_state returned {repr(set_result)})")
 
     # FIXME: use some other bus method than poll() with block=False
     # https://lazka.github.io/pgi-docs/#Gst-1.0/classes/Bus.html
@@ -203,7 +204,7 @@ def _playsoundAnotherPython(otherPython, sound, block = True, macOS = False):
 
     # Check if the file exists...
     if not exists(abspath(sound)):
-        raise PlaysoundException('Cannot find a sound with filename: ' + sound)
+        raise PlaysoundException(f'Cannot find a sound with filename: {sound}')
 
     playsoundPath = abspath(getsourcefile(lambda: 0))
     t = PropogatingThread(target = lambda: check_call([otherPython, playsoundPath, _handlePathOSX(sound) if macOS else sound]))
