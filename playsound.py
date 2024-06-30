@@ -8,13 +8,7 @@ def _canonicalizePath(path):
     """
     Support passing in a pathlib.Path-like object by converting to str.
     """
-    import sys
-    if sys.version_info[0] >= 3:
-        return str(path)
-    else:
-        # On earlier Python versions, str is a byte string, so attempting to
-        # convert a unicode string to str will fail. Leave it alone in this case.
-        return path
+    return str(path)
 
 def _playsoundWin(sound, block = True):
     '''
@@ -28,7 +22,6 @@ def _playsoundWin(sound, block = True):
 
     I never would have tried using windll.winmm without seeing his code.
     '''
-    # sound = '"' + _canonicalizePath(sound) + '"'
     sound = f'\"{_canonicalizePath(sound)}\"'
 
     from ctypes import create_unicode_buffer, windll, wintypes
@@ -54,7 +47,8 @@ def _playsoundWin(sound, block = True):
     try:
         logger.debug('Starting')
         winCommand(f'open {sound}')
-        winCommand(f'play {sound}{' block' if block else ''}')
+        is_block = 'block' if block else ''
+        winCommand(f'play {is_block}')
         logger.debug('Returning')
     finally:
         try:
@@ -136,12 +130,8 @@ def _playsoundNix(sound, block = True):
     sound = _canonicalizePath(sound)
 
     # pathname2url escapes non-URL-safe characters
-    from os.path import abspath, exists
-    try:
-        from urllib.request import pathname2url
-    except ImportError:
-        # python 2
-        from urllib import pathname2url
+    from os.path import abspath, exists    
+    from urllib.request import pathname2url
 
     import pgi
     pgi.require_version('Gst', '1.0')
